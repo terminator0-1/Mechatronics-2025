@@ -1,12 +1,11 @@
 // Library and Object Setup
 #include <SoftwareSerial.h>
-SoftwareSerial mySerial(10, 11); // RX, TX
-
-
+SoftwareSerial mySerial(2,3); // RX, TX
 
 // Variable Intialization
 unsigned long time = 0;
 unsigned long time_old = 0;
+
 
 
 void setup()  
@@ -34,5 +33,6 @@ void loop(){
 
   if (mySerial.available()) {
     Serial.println(mySerial.readStringUntil('\n'));
+    
   }
 }
