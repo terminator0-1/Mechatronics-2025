@@ -15,6 +15,10 @@ Servo myServo1, myServo2,myServo3;
 DualTB9051FTGMotorShieldUnoMega md;
 //Pins
 
+////Switches/////
+const int homeSwitch = 53;
+const int dropSwitch = 54;
+
 ///// L298N /////
 const int enaArm = 46;
 const int in1Arm = 22;
@@ -25,7 +29,7 @@ L298N armMotor(enaArm, in1Arm, in2Arm);
 float f = 0.25;
 unsigned long t = 0;
 
-
+int M = 400;
 String miningState = "wood";
 
 // float motorCurrentLeft = A0;
@@ -36,7 +40,8 @@ void setup() {
 myServo1.attach(11,1000,2000); //Servo ONE pin
 myServo2.attach(5,1000,2000); //Servo TWO pin
 myServo3.attach(13,1000,2000);
-
+pinMode(homeSwitch, INPUT);
+pinMode(dropSwitch, INPUT);
 
 //Set Speed of Arm motor.
 armMotor.setSpeed(200);
@@ -65,7 +70,7 @@ md.enableDrivers();
 void loop() {
   double t = micros() / 1000000.0;
   //int M = 400 * sin(2 * PI * f * t);
-  int M = 400;
+
   if (Serial.available()) {
     Serial1.println(Serial.readStringUntil('\n'));
   }
@@ -126,9 +131,27 @@ void loop() {
           myServo2.write(0);
           myServo3.write(0);
           break;
-
-        default:
-          Serial.println("Unknown command.");
+        case 'C':
+          // Start LineFollowing
+          followLine();
+          break;
+        case 'W':
+          // Drive up to wall and stop at given distance)
+          //Have user enter distance
+          int dist = Serial.read();
+          readWall(dist);          
+          break;
+        case 'M':
+          Serial.println("-------------Menu---------------");
+          Serial.println("F - Drive Forward");
+          Serial.println("B - Drive Backward");
+          Serial.println("L - Turn Left");
+          Serial.println("R - Turn Right");
+          Serial.println("U - Move Arm Up");
+          Serial.println("D - Move Arm Down");
+          Serial.println("S - Move Servos");
+          Serial.println("C - Follow Line");
+          Serial.println("W - Sense Wall");
           break;
       }
     } else {
