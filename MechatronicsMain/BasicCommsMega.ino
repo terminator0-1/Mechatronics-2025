@@ -5,16 +5,15 @@
 #include <L298N.h>
 
 //Objects
-Servo myServo1, myServo2,myServo3;
+Servo myServo1, myServo2, myServo3;
 // PWMServo myServo2;
 // Servo myServo3;
-
 // Encoder encLeft(18,19);
 // Encoder endRight(20,21);
 
 DualTB9051FTGMotorShieldUnoMega md;
 //Pins
-
+const int IRpin = A2;
 ////Switches/////
 const int homeSwitch = 53;
 const int dropSwitch = 54;
@@ -24,82 +23,68 @@ const int enaArm = 46;
 const int in1Arm = 22;
 const int in2Arm = 23;
 L298N armMotor(enaArm, in1Arm, in2Arm);
-
-//Global Variables
-float f = 0.25;
-unsigned long t = 0;
-
 int M = 400;
-String miningState = "wood";
 
 // float motorCurrentLeft = A0;
 // float motorCuttentRight = A1;
 
 void setup() {
-/////////////PIN STUFF///////////////////////////
-myServo1.attach(11,1000,2000); //Servo ONE pin
-myServo2.attach(5,1000,2000); //Servo TWO pin
-myServo3.attach(13,1000,2000);
-pinMode(homeSwitch, INPUT);
-pinMode(dropSwitch, INPUT);
+  /////////////PIN STUFF///////////////////////////
+  myServo1.attach(11, 1000, 2000);  //Servo ONE pin
+  myServo1.write(-30); //Servo one zero position
+  myServo2.attach(5, 1000, 2000);  //Servo TWO pin
+  myServo3.attach(13, 1000, 2000);
+  pinMode(homeSwitch, INPUT);
+  pinMode(dropSwitch, INPUT);
+  pinMode(IRpin, OUTPUT);
 
-//Set Speed of Arm motor.
-armMotor.setSpeed(200);
+ 
 
-//Initialize Base Motors and set encoders.
-md.init();
-md.enableDrivers();
-
-// encLeft.write(0);
-// endRight.write(0);
-/////////////////////////////////////////////////
+  //Initialize Base Motors and set encoders.
+  md.init();
+  md.enableDrivers();
+  armMotor.setSpeed(200);
+  // encLeft.write(0);
+  // endRight.write(0);
+  
+  /////////////////////////////////////////////////
   // Open serial communications with computer and wait for port to open:
-  Serial.begin(57600); // make sure to also select this baud rate in your Serial Monitor window
-
+  Serial.begin(115200);  // make sure to also select this baud rate in your Serial Monitor window
   // Print a message to the computer through the USB
   Serial.println("Hello Computer!");
-
   // Open serial communications with the other Arduino board
+  // Comment out if you are using Mega's serial monitor.
+  /////////////////////////////////////////////////
   Serial1.begin(115200);  // this needs to match the mySerial baud rate in UnoSending
   // for wireless comms, it also needs to match the Xbee firmware setting of 115200
-
-  // Send a message to the other Arduino board
+  //Send a message to the other Arduino board
   Serial1.print("Hello other Arduino!");
+  /////////////////////////////////////////////////
 }
 
 void loop() {
-  double t = micros() / 1000000.0;
-  //int M = 400 * sin(2 * PI * f * t);
-
-  if (Serial.available()) {
-    Serial1.println(Serial.readStringUntil('\n'));
-  }
-
+  //  * FOR MEGA SERIAL CHANGE SERIAL1 TO SERIAL HERE *
+  //////////////////////////////////////////
   if (Serial1.available()) {
-    String dataString = Serial1.readStringUntil('\n');  // read from Serial1 only
-    dataString.trim();                                  // remove whitespace/newline
+    
+    String dataString = Serial1.readStringUntil('\n');
+    dataString.trim();
 
-    // Defensive check: make sure string is the correct format.
-    if (dataString.length() <= 7) {
+  //////////////////////////////////////////
+    if (dataString.length() <= 7) { 
       char Signal = dataString.charAt(0);
       // char blocktype = dataString.charAt(0);           // single char
       // String cellStatus = dataString.substring(2, 5);  // substring [2,4)
       // char pickType = dataString.charAt(6);
-
-      // Debug
-      Serial.print("User entered ");
-      Serial.println(Signal);
-      // Serial.println(cellStatus);
-      // Serial.println(pickType);
-
+    
       switch (Signal) {
         case 'F':
-          driveForward(M, t);
+          driveForward(M);
           Serial.println("Driving Forward...");
           break;
 
         case 'B':
-          driveBackward(M,t);
+          driveBackward(M);
           Serial.println("Driving Backward...");
           break;
 
@@ -123,23 +108,23 @@ void loop() {
           Serial.println("Moving Arm Down.");
           break;
         case 'S':
-          myServo1.write(150);
-          myServo2.write(150);
-          myServo3.write(150);
+          myServo1.write(100);
+          // myServo2.write(150);
+          // myServo3.write(150);
           delay(250);
           myServo1.write(0);
-          myServo2.write(0);
-          myServo3.write(0);
+          // myServo2.write(0);
+          // myServo3.write(0);
           break;
         case 'C':
           // Start LineFollowing
-          followLine();
+          //followLine();
           break;
         case 'W':
-          // Drive up to wall and stop at given distance)
-          //Have user enter distance
-          int dist = Serial.read();
-          readWall(dist);          
+            // Drive up to wall and stop at given distance
+            //Have user enter distance
+            //int dist = Serial.read();
+            readWall(1.30,M);
           break;
         case 'M':
           Serial.println("-------------Menu---------------");
@@ -154,8 +139,6 @@ void loop() {
           Serial.println("W - Sense Wall");
           break;
       }
-    } else {
-      Serial.println("Data too short!");
     }
   }
 }
