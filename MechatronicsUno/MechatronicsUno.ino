@@ -11,7 +11,7 @@ unsigned long time_old = 0;
 void setup()  
 {
   // Open serial communications with computer and wait for port to open:
-  Serial.begin(57600);  // make sure to also select this baud rate in your Serial Monitor window
+  Serial.begin(115200);  // make sure to also select this baud rate in your Serial Monitor window
 
   // Print a message to the computer through the USB
   Serial.println("Hello Computer!");
