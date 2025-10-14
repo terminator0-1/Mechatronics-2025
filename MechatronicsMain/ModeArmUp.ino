@@ -1,6 +1,12 @@
 void moveArmU(){
-  // Swap black and red
-  armMotor.backward();
-  delay(1500);
-  armMotor.stop();
+   armMotor.forward();
+  //  bool armNotHome = true;
+  //  while (armNotHome){
+  //    if (digitalRead(dropSwitch) == HIGH){
+  //   armMotor.stop();
+  //   armNotHome = false;
+  //   }
+  // }
+   delay(1500);
+   armMotor.stop();
 }
