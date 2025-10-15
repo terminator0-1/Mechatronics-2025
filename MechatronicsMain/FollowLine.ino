@@ -1,4 +1,4 @@
-void followLine(float dist) {
+void followLine() {
   while (following) {
     t = micros() / 1000000. - t0;
     qtr.read(sensorValues);  
