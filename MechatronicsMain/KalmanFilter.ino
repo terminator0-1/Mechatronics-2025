@@ -1,10 +1,10 @@
 #import <BasicLinearAlgebra.h> using namespace BLA;
-float kalmanFilter(float z){
+float kalmanFilter(float z,float R){
   static BLA::Matrix<2,1> x = {0,0};
   static BLA::Matrix<2,2> P = {0.01,0,0,0.01};
   static const float dt = 0.01f;
-  static const float R = 0.5;
-  static BLA::Matrix<2,2> Qk = {0.004,0,0,0.004};
+   //static const float R = 0.6;
+  static BLA::Matrix<2,2> Qk = {0.005,0,0,0.004};
   static BLA::Matrix<2,2> F = {1,dt,0,1};
   static BLA::Matrix<1,2> H = {1,0};
   static BLA::Matrix<2,1> B = {0,dt};
