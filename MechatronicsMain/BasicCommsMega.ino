@@ -2,7 +2,30 @@
 #include <Servo.h>
 // #include <Encoder.h>
 #include <DualTB9051FTGMotorShieldUnoMega.h>
+#include <SharpDistSensor.h>
 #include <L298N.h>
+#include <QTRSensors.h>
+
+// Library objects
+QTRSensors qtr; // create a reflectance sensor object
+
+  // Global variables
+const uint8_t SensorCount = 8;       // # of sensors in reflectance array
+uint16_t sensorValues[SensorCount];  //reflectance sensor readings
+double t, t0, print_time = 0;        // declare some time variables
+
+float sensor_bias[SensorCount] = { 330.8225, 231.0588, 281.4118, 231.0588, 231.0588, 281.448, 231.0588, 327.6741 };  //reflectance sensor readings
+int16_t Sensor_value_unbiased[SensorCount];                                                                          //reflectance sensor readings
+float d[SensorCount] = { 0, 0.8, 1.6, 2.4, 3.2, 4.0, 4.8, 5.6 };
+bool following = true;
+float dTop = 0;
+float dBottom = 0;
+float dComp = 0;
+float d0 = 2.8;
+float error = 0;
+double Kp = 26;           //Proportional Gain for Line Following
+double base_speed = 200;  //Nominal speed of robot
+int m1c = 0, m2c = 0;  //declare and initialize motor commands
 
 //Objects
 Servo myServo1, myServo2, myServo3;
@@ -10,10 +33,11 @@ Servo myServo1, myServo2, myServo3;
 // Servo myServo3;
 // Encoder encLeft(18,19);
 // Encoder endRight(20,21);
-
 DualTB9051FTGMotorShieldUnoMega md;
 //Pins
-const int IRpin = A2;
+const float IRpin = A2;
+SharpDistSensor distsensor(IRpin,1);
+
 ////Switches/////
 const int homeSwitch = 53;
 const int dropSwitch = 54;
@@ -23,12 +47,18 @@ const int enaArm = 46;
 const int in1Arm = 22;
 const int in2Arm = 23;
 L298N armMotor(enaArm, in1Arm, in2Arm);
-int M = 400;
+int M = 200;
 
 // float motorCurrentLeft = A0;
 // float motorCuttentRight = A1;
 
 void setup() {
+  //Line Following
+  qtr.setTypeRC();
+  qtr.setSensorPins((const uint8_t[]){28,30,32,34,36,38,40,42},SensorCount);
+  t0 = micros()/1000000.;
+  distsensor.setModel(SharpDistSensor::GP2Y0A41SK0F_5V_DS);
+
   /////////////PIN STUFF///////////////////////////
   myServo1.attach(11, 1000, 2000);  //Servo ONE pin
   myServo1.write(-30); //Servo one zero position
@@ -36,9 +66,6 @@ void setup() {
   myServo3.attach(13, 1000, 2000);
   pinMode(homeSwitch, INPUT);
   pinMode(dropSwitch, INPUT);
-  pinMode(IRpin, OUTPUT);
-
- 
 
   //Initialize Base Motors and set encoders.
   md.init();
@@ -61,84 +88,6 @@ void setup() {
   Serial1.print("Hello other Arduino!");
   /////////////////////////////////////////////////
 }
-
 void loop() {
-  //  * FOR MEGA SERIAL CHANGE SERIAL1 TO SERIAL HERE *
-  //////////////////////////////////////////
-  if (Serial1.available()) {
-    
-    String dataString = Serial1.readStringUntil('\n');
-    dataString.trim();
-
-  //////////////////////////////////////////
-    if (dataString.length() <= 7) { 
-      char Signal = dataString.charAt(0);
-      // char blocktype = dataString.charAt(0);           // single char
-      // String cellStatus = dataString.substring(2, 5);  // substring [2,4)
-      // char pickType = dataString.charAt(6);
-    
-      switch (Signal) {
-        case 'F':
-          driveForward(M);
-          Serial.println("Driving Forward...");
-          break;
-
-        case 'B':
-          driveBackward(M);
-          Serial.println("Driving Backward...");
-          break;
-
-        case 'L':
-          turnLeft(M);
-          Serial.println("Turning Left...");
-          break;
-
-        case 'R':
-          turnRight(M);
-          Serial.println("Turning Right...");
-          break;
-
-        case 'U':  // maybe shorthand for "craft"
-          moveArmU();
-          Serial.println("Moving Arm Up.");
-          break;
-
-        case 'D':
-          moveArmD();
-          Serial.println("Moving Arm Down.");
-          break;
-        case 'S':
-          myServo1.write(100);
-          // myServo2.write(150);
-          // myServo3.write(150);
-          delay(250);
-          myServo1.write(0);
-          // myServo2.write(0);
-          // myServo3.write(0);
-          break;
-        case 'C':
-          // Start LineFollowing
-          //followLine();
-          break;
-        case 'W':
-            // Drive up to wall and stop at given distance
-            //Have user enter distance
-            //int dist = Serial.read();
-            readWall(1.30,M);
-          break;
-        case 'M':
-          Serial.println("-------------Menu---------------");
-          Serial.println("F - Drive Forward");
-          Serial.println("B - Drive Backward");
-          Serial.println("L - Turn Left");
-          Serial.println("R - Turn Right");
-          Serial.println("U - Move Arm Up");
-          Serial.println("D - Move Arm Down");
-          Serial.println("S - Move Servos");
-          Serial.println("C - Follow Line");
-          Serial.println("W - Sense Wall");
-          break;
-      }
-    }
-  }
+  switchState();
 }
