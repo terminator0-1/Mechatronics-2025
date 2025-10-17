@@ -88,6 +88,10 @@ void setup() {
   Serial1.print("Hello other Arduino!");
   /////////////////////////////////////////////////
 }
+
+
+
 void loop() {
+  // Whole program will run within here.
   switchState();
 }
