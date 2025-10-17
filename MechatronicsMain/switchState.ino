@@ -3,13 +3,10 @@ void switchState() {
 
     String dataString = Serial1.readStringUntil('\n');
     dataString.trim();
-
-    //////////////////////////////////////////
-    if (dataString.length() <= 7) {
+    
+    if (dataString.length() == 1) {
       char Signal = dataString.charAt(0);
-      // char blocktype = dataString.charAt(0);           // single char
-      // String cellStatus = dataString.substring(2, 5);  // substring [2,4)
-      // char pickType = dataString.charAt(6);
+    
       Serial.println(Signal);
       switch (Signal) {
         case 'a':
