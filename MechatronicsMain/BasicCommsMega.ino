@@ -1,6 +1,6 @@
 //Librarys
 #include <Servo.h>
-// #include <Encoder.h>
+#include <Encoder.h>
 #include <DualTB9051FTGMotorShieldUnoMega.h>
 #include <SharpDistSensor.h>
 #include <L298N.h>
@@ -8,39 +8,56 @@
 
 // Library objects
 QTRSensors qtr; // create a reflectance sensor object
-
-  // Global variables
+// Global variables
 const uint8_t SensorCount = 8;       // # of sensors in reflectance array
 uint16_t sensorValues[SensorCount];  //reflectance sensor readings
-double t, t0, print_time = 0;        // declare some time variables
-
-float sensor_bias[SensorCount] = { 330.8225, 231.0588, 281.4118, 231.0588, 231.0588, 281.448, 231.0588, 327.6741 };  //reflectance sensor readings
+float sensor_bias[SensorCount] = {0.0,0.0,5.07,10.10,15.71,20.62,24.53,26.50};
+//float sensor_bias[SensorCount] = { 330.8225, 231.0588, 281.4118, 231.0588, 231.0588, 281.448, 231.0588, 327.6741 };  //reflectance sensor readings
 int16_t Sensor_value_unbiased[SensorCount];                                                                          //reflectance sensor readings
-float d[SensorCount] = { 0, 0.8, 1.6, 2.4, 3.2, 4.0, 4.8, 5.6 };
+float d[SensorCount] = {0, 0.8, 1.6, 2.4, 3.2, 4.0, 4.8, 5.6 };
 bool following = true;
-float dTop = 0;
-float dBottom = 0;
-float dComp = 0;
-float d0 = 2.8;
-float error = 0;
-double Kp = 26;           //Proportional Gain for Line Following
+float dTop = 0,dBottom = 0,dComp = 0,error=0;
+float d0 = 2.7;
+//double Kp = 25; Old Kp
+double Kp = 90;           //Proportional Gain for Line Following
 double base_speed = 200;  //Nominal speed of robot
 int m1c = 0, m2c = 0;  //declare and initialize motor commands
+
+// Color Sensor
+const int s0 = 33, s1 = 35, s2 = 37, s3 = 39;
+int readPin = 41, LEDPin = 31;
+
+const int numSamples = 8;
+float R[numSamples], G[numSamples], B[numSamples], C[numSamples]; // raw pulse time samples
+float RF, GF, BF, CF; // filtered data
+
+long counts1, counts2, counts3;  // encoder counts
 
 //Objects
 Servo myServo1, myServo2, myServo3;
 // PWMServo myServo2;
 // Servo myServo3;
-// Encoder encLeft(18,19);
-// Encoder endRight(20,21);
+
+Encoder myEnc1(18,19);
+Encoder myEnc2(20,21);
+
+// Encoders
+double t0 = 0;  // declare some time variables
+int countsPerRev = 64;
+float rw = 4.15;
+float D = 26.0;
+float GearRatio = 102.08;
+
+
 DualTB9051FTGMotorShieldUnoMega md;
 //Pins
+const float magPin = A3;
 const float IRpin = A2;
-SharpDistSensor distsensor(IRpin,1);
+SharpDistSensor distsensor(IRpin,15);
 
 ////Switches/////
-const int homeSwitch = 53;
-const int dropSwitch = 54;
+const int homeSwitchPin = 29;
+const int dropSwitchPin = 27;
 
 ///// L298N /////
 const int enaArm = 46;
@@ -56,24 +73,38 @@ void setup() {
   //Line Following
   qtr.setTypeRC();
   qtr.setSensorPins((const uint8_t[]){28,30,32,34,36,38,40,42},SensorCount);
-  t0 = micros()/1000000.;
-  distsensor.setModel(SharpDistSensor::GP2Y0A41SK0F_5V_DS);
+  t0 = micros() / 1000000.;
+  //distsensor.setModel(SharpDistSensor::GP2Y0A41SK0F_5V_DS);
 
-  /////////////PIN STUFF///////////////////////////
-  myServo1.attach(11, 1000, 2000);  //Servo ONE pin
-  myServo1.write(-30); //Servo one zero position
-  myServo2.attach(5, 1000, 2000);  //Servo TWO pin
-  myServo3.attach(13, 1000, 2000);
-  pinMode(homeSwitch, INPUT);
-  pinMode(dropSwitch, INPUT);
+  /////////////PIN STUFF//////////////////////////////////////
+  myServo1.attach(47);  //Servo ONE pin
+  myServo2.attach(49);  //Servo TWO pin
+  myServo3.attach(5); // Servo THREE pin
+  myServo1.write(0);
+  myServo2.write(0);
+  myServo3.write(0);
+  pinMode(homeSwitchPin, INPUT_PULLUP);
+  pinMode(dropSwitchPin, INPUT_PULLUP);
 
   //Initialize Base Motors and set encoders.
   md.init();
   md.enableDrivers();
-  armMotor.setSpeed(200);
+  armMotor.setSpeed(210);
   // encLeft.write(0);
   // endRight.write(0);
+
+  // Color Sensor Initialization
+
+  pinMode(s0, OUTPUT);
+  pinMode(s1, OUTPUT);
+  pinMode(s2, OUTPUT);
+  pinMode(s3, OUTPUT);
+  pinMode(readPin, INPUT);
+  pinMode(LEDPin, OUTPUT);
+  digitalWrite(s0, HIGH); // s1 and s0 choose frequency scaling
+  digitalWrite(s1,LOW);
   
+  distsensor.setModel(SharpDistSensor::GP2Y0A41SK0F_5V_DS);
   /////////////////////////////////////////////////
   // Open serial communications with computer and wait for port to open:
   Serial.begin(115200);  // make sure to also select this baud rate in your Serial Monitor window
@@ -82,16 +113,26 @@ void setup() {
   // Open serial communications with the other Arduino board
   // Comment out if you are using Mega's serial monitor.
   /////////////////////////////////////////////////
-  Serial1.begin(115200);  // this needs to match the mySerial baud rate in UnoSending
+  Serial2.begin(115200);  // this needs to match the mySerial baud rate in UnoSending
   // for wireless comms, it also needs to match the Xbee firmware setting of 115200
   //Send a message to the other Arduino board
-  Serial1.print("Hello other Arduino!");
+  Serial2.print("Hello other Arduino!");
   /////////////////////////////////////////////////
 }
-
-
-
 void loop() {
-  // Whole program will run within here.
+  // For Testing Purposes
+  
   switchState();
+  //readColorSensor(s2,s3,readPin);
+  //Serial.println(readMagnet());
 }
+
+// CHECKLIST
+// - Line Following working ✔️
+// - Distance Sensor working accuratley ✔️
+// - Arm can move up and down using switches ✔️
+// - Servos extend properly✔️
+// - Mine Block Servo working
+// - Read Magnets ✔️
+// - Read Block colors ✔️
+// - Encoders Working 
