@@ -1,9 +1,10 @@
 void followLine() {
+alpha = 0.7;
     double t, t_old, deltaT, print_time, t0d = 0;  // declare some time variables
   while (following) {
     t = micros() / 1000000. - t0;
     qtr.read(sensorValues);  
-
+    deltaT = t-t_old; 
     for (int i = 0; i < 8; i++) {
       Sensor_value_unbiased[i] = sensorValues[i] - sensor_bias[i];
     }
@@ -16,15 +17,29 @@ void followLine() {
     }
     
     dComp = dTop / dBottom;
-    error = d0 - dComp;
+      
+    error1 = d0 - dComp;
+    error2 = dComp - d0;
 
-    m1c = base_speed + Kp * error;
-    m2c = base_speed - Kp * error;
+    omega1f = alpha*omega1 + (1-alpha) * omega1f;
+    omega2f = alpha*omega2 + (1-alpha) * omega2f;
+
+    omega1_des = 0;
+    omega2_des = 0;
+
+    dErrordt1 = omega1_des - omega1f;
+    dErrordt2 = omega2_des - omega2f;
+
+    Kerror = (Kp * error) + (Ki * integralError) + Kd*dErrordt;
+      
+    V2 = basespeed + Kerror;
+    V1 = basespeed - Kerror;
 
     //prevError = error; // PID Control
 
     ////////// LINE FOLLOWING CODE
-    driveForward(m1c,m2c);  // send motor commands
+    md.setM1Speed(V1);  // send motor commands
+    md.setM2Speed(V2);
 
     // PRINT STATEMENTS
     // non-blocking way to delay printing
