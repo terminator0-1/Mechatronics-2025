@@ -1,6 +1,4 @@
 void switchState() {
-
-
   if (Serial2.available()) {
     String dataString = Serial2.readStringUntil('\n');
     dataString.trim();
@@ -8,36 +6,46 @@ void switchState() {
       char Signal = dataString.charAt(0);
 
       switch (Signal) {
-        case 'u':
-          moveArmU();
-          break;
-        case 'd':
-          moveArmD();
-          break;
-        case 'r':
-          harvestBlock();
-          // Serial2.println("Sensed block: Iron");
-          break;
-        case 'm':
-          dispenceBlock();
-          break;
-        case 'w':
-          readWall(15.0);
-          break;
+        // Craft Stone Pick
         case 's':
-          myServo1.write(180);
-          delay(500);
-          myServo1.write(0);
-        case 'x':
-          // Stop Driving Motors
-          md.setSpeeds(0, 0);
-          // Stop Arm Motor
-          armMotor.stop();
-          // Set servos to 0.
-          myServo1.write(0);
-          myServo2.write(0);
-          myServo3.write(0);
-          //set defaultState = true;
+          FullCompetitionCode(0);
+          break;
+
+          // Craft Iron Pick
+        case 'i':
+          FullCompetitionCode(1);
+          break;
+
+          // Keep Mining with iron pick, silverfish now a problem.
+        case 'm':
+          followLine(true, 200);
+          while (1) {
+            FullCompetitionCodeMining();
+          }
+          break;
+
+          // Start Sequence Test.
+        case 'f':
+          followLine(true, 200);
+          orient();
+          goToTable();
+        break;
+
+        case 'g':
+          correctMagnetBlock();
+        break;
+        // Magnet Test
+        case 'h':
+          bool test = true;
+          while (test) {
+            bool kick = readMagnet(2.0, 1);
+            if (kick) {
+              myServo1.write(90);
+              delay(250);
+              myServo1.write(0);
+              test = false;
+            }
+          }
           break;
       }
     }
