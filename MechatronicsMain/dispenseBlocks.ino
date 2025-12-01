@@ -1,17 +1,23 @@
-void dispenceBlock(){
-// Assume driving up to table
+void dispenceBlock() {
+  // Assume driving up to table
+  bool waitSwitch = true;
+  // 1️⃣ HIT SWITCH PRESSED
+  while (waitSwitch) {
+    if (digitalRead(hitSwitchPin) == 1) {
+      Serial2.println("SWITCH HIT");
+      md.setSpeeds(0, 0);
+      straightTrajectory(-8, .5);
+      Serial.println("Hit Switch Pressed → STOP");
+      waitSwitch = false;
+      break;
+    }
+  }
 
-// md.setSpeeds(100,100);
-// readWall(4.5);
-
-// The robot is ready to extend
-moveArmU();
-//Drop block and return.
-delay(500);
-myServo1.write(180);
-delay(300);
-myServo1.write(0);
-moveArmD();
-
-// Sequence finished.
+  moveArmU();
+  delay(250);
+  myServo1.write(180);
+  delay(500);
+  myServo1.write(0);
+  delay(250);
+  moveArmD();
 }
