@@ -1,16 +1,5 @@
 void spinTrajectorySpecialBackward(float spinAngle, float travelTime) {
 
-  // Serial.print("Spin");
-  // Serial2.println("Enter Spin Angle (deg)");
-  // while (!Serial2.available());
-  // float spinAngle = Serial2.parseFloat() * (PI / 180.0) * 1.08;
-  // Serial2.readStringUntil('\n');  // clear buffer
-
-  // Serial2.println("Enter Travel Time (deg): ");
-  // while (!Serial2.available());
-  // travelTime = Serial2.parseFloat();
-  // Serial2.readStringUntil('\n');  // clear buffer
-
   float theta1_final = 0, theta2_final = 0;
   int m1backwardsFlag = 0, m2backwardsFlag = 0;
   char spinFlag = 'i';
