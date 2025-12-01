@@ -1,30 +1,52 @@
-void readMagnet() {
+// Function for reading magnet -- returns a true or false flag.
+bool readMagnet(float startValue, int collected) {
   bool magRead = true;
-  float sum = 0.0;
-  float prevAvg = 0.0;
-  unsigned long lastCheck = millis();
+  bool killedSilverFish = false;
+  unsigned long startTime = millis();  // time when the function started
 
   while (magRead) {
-    // Take 10 readings and average
-    sum = 0.0;
-    for (byte i = 0; i < 10; i++) {
-      sum += analogRead(magPin) * (5.0 / 1023.0);
-      delay(10);  // small delay for stable sampling
-    }
+    float nowValue = analogRead(magPin) * (5.0 / 1023.0);
+    float nowValue2 = analogRead(magPin2) * (5.0 / 1023.0);
 
-    float avgValue = sum / 10.0;
-    Serial.println("Wait..");
-    // Compare to previous average after first sample
-    if (avgValue > 2.52 || avgValue < 2.4) {
-      magRead = false;
-      Serial.println("SilverFish Detected...");
-    } else {
-      prevAvg = analogRead(magPin) * (5.0 / 1023.0);
+    Serial.println(abs(startValue - nowValue));
+    Serial.print('\t');
+    // Serial.println(abs(startValue - nowValue2));
+
+    float diff1 = abs(startValue - nowValue);
+    float diff2 = abs(startValue - nowValue2);
+    
+
+    // Detect sudden change in magnetic field
+    if(collected > 0){
+       if (diff1 >= .95 && diff1 <= 1.25) {
+        magRead = false;
+        // We are in the collect block position.
+        delay(500);
+        straightTrajectory(4, .75);
+        killSilverfish('w');  // This would need to be known from the mag sense func and passed in.
+        killedSilverFish = true;
+        Serial.println("SilverFish Detected...");
+        break;
+      }
+    } else if (collected == 0){
+       if ((diff1 >= .95 && diff1 <= 1.25) || (diff2 >= .95 && diff2 <= 1.25)){
+        magRead = false;
+        // We are in the collect block position.
+        delay(500);
+        straightTrajectory(4, .75);
+        killSilverfish('w');  // This would need to be known from the mag sense func and passed in.
+        killedSilverFish = true;
+        Serial.println("SilverFish Detected...");
+        break;
+      }
     }
-    // Optional: timeout after 2 seconds to prevent infinite loop
-    if (millis() - lastCheck > 500) {
+    // ---- TIMEOUT: 5 seconds ---- -- might remove this if two mag sensors work okay.
+    if (millis() - startTime >= 1500) {
+      Serial.println("Magnet timeout reached (5s).");
+      magRead = false;
       break;
     }
-    //Serial.println(avgValue);
+    // Debug print
   }
+  return killedSilverFish;
 }
