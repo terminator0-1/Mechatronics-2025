@@ -1,24 +1,20 @@
-void spinTrajectory(double &theta1_final, double &theta2_final, float &travelTime, int &m1backwardsFlag, int &m2backwardsFlag) {
-  Serial.print("Spin");
-  Serial2.println("Enter Spin Angle (deg)");
-  while (!Serial2.available());
-  float spinAngle = Serial2.parseFloat() * (PI / 180.0) * 1.08;
-  Serial2.readStringUntil('\n');  // clear buffer
+void spinTrajectory(float spinAngle, float travelTime) {
+  md.setSpeeds(0,0);
+  
+  float theta1_final = 0, theta2_final = 0;
+  int m1backwardsFlag = 0, m2backwardsFlag = 0;
+  char spinFlag = 'i';
 
-  Serial2.println("Enter Travel Time (deg): ");
-  while (!Serial2.available());
-  travelTime = Serial2.parseFloat();
-  Serial2.readStringUntil('\n');  // clear buffer
-
-  if (spinAngle < 0) {
+   if (spinAngle < 0) {
     m1backwardsFlag = -1;
     m2backwardsFlag = 1;
-    theta1_final = (spinAngle * (D / 2.0)) / rw;
+     theta1_final = ((spinAngle*(PI / 180.0)) * (D / 2.0)) / rw;
     theta2_final = -theta1_final;
   } else {
     m1backwardsFlag = 1;
     m2backwardsFlag = -1;
-    theta1_final = (spinAngle * (D / 2.0)) / rw;
+    theta1_final = ((spinAngle * (PI / 180.0)) * (D / 2.0)) / rw;
     theta2_final = -theta1_final;
   }
+  getTrajectory(theta1_final, theta2_final, travelTime,spinFlag, m1backwardsFlag, m2backwardsFlag);
 }
