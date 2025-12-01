@@ -22,45 +22,60 @@ void getNormalized(float &NR, float &NG, float &NB, float &C) {
   NB = B / C;
 }
 // --- Main logic function: read + filter + classify ---
-void readColorSensor(int s2, int s3, int readPin) {
+char readColor(int s2, int s3, int readPin) {
   bool scanColor = true;
-  unsigned long lastCheck = millis();
-  int startTime = 3000;
+  unsigned long timeStart = millis();
+  unsigned long waitingInterval = 5000;  // 1.5 seconds timeout
+  char sensedBlock = 'n';
+
   while (scanColor) {
-    digitalWrite(LEDPin, HIGH);  //turn on LED
+    delay(50);
+    digitalWrite(LEDPin, HIGH);
+
     float NR, NG, NB, C;
     getNormalized(NR, NG, NB, C);
+    digitalWrite(LEDPin, LOW);
 
-    Serial.print(NR);
-    Serial.print('\t');
-    Serial.print(NG);
-    Serial.print('\t');
-    Serial.println(NB);
+    // --- RED Block ---
+    if ((NR >= 0.46 && NR <= 0.62) &&
+        (NG >= 0.17 && NG <= 0.29) &&
+        (NB >= 0.22 && NB <= 0.34)) {
 
-    if (millis() - lastCheck > startTime) {
-      // --- RED Block ---
-      if ((NR >= 0.5 && NR <= 0.7) && (NG >= 0.0 && NG <= 0.3) && (NB >= 0.0 && NB <= 0.3)) {
+      Serial2.println("Red Block Sensed");
+      sensedBlock = 'i';
+    }
 
-        Serial2.println("Red Block Sensed");
-        scanColor = false;
-        mineServo('r');
-      }
+    // --- BLUE Block ---
+    else if ((NR >= 0.01 && NR <= 0.14) &&
+             (NG >= 0.23 && NG <= 0.35) &&
+             (NB >= 0.66 && NB <= 0.87)) {
 
-      // --- BLUE Block ---
-      else if ((NR >= 0.0 && NR <= 0.2) && (NG >= 0.2 && NG <= 0.4) && (NB >= 0.5 && NB <= 0.9)) {
+      Serial2.println("Blue Block Sensed");
+      sensedBlock = 'd';
+    }
 
-        Serial2.println("Blue Block Sensed");
-        scanColor = false;
-        mineServo('b');
-      }
+    // --- YELLOW Block ---
+    else if ((NR >= 0.24 && NR <= 0.44) &&
+             (NG >= 0.30 && NG <= 0.57) &&
+             (NB >= 0.21 && NB <= 0.34)) {
 
-      // --- OTHERWISE YELLOW ---
-      else if ((NR > 0.7) && (NG > 0.6)){
-        Serial2.println("Yellow Block Sensed");
-        scanColor = false;
-        mineServo('y');
-      }
+      Serial2.println("Yellow Block Sensed");
+      sensedBlock = 's';
+    }
+
+    // ---------------- EXIT CONDITIONS ----------------
+
+    // If block sensed → stop scanning
+    if (sensedBlock != 'n') {
+      scanColor = false;
+    }
+
+    // TIMEOUT: no block detected in time
+    else if (millis() - timeStart >= waitingInterval) {
+      Serial2.println("Color Timeout → Backing up");
+      straightTrajectory(-1.5, 0.25);   // backup a little
     }
   }
-  digitalWrite(LEDPin, LOW);
+
+  return sensedBlock;
 }
